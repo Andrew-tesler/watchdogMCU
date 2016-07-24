@@ -10,4 +10,6 @@
 	<createSlaveProjects value=""/>
 	<origin value="C:\ti\msp430\MSPWare_3_30_00_18\usblib430\MSP430_USB_Software\MSP430_USB_API\examples\CDC_virtualCOMport\C1_LedOnOff\CCS\C1_LedOnOff.projectspec"/>
 	<templateProperties value="id=C1_LedOnOff.projectspec.C1_LedOnOff,"/>
+	<connection value="common/targetdb/connections/TIMSP430-USB.xml"/>
+	<isTargetManual value="false"/>
 </projectOptions>

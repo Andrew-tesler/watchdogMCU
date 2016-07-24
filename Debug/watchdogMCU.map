@@ -1,7 +1,7 @@
 ******************************************************************************
                   MSP430 Linker PC v16.6.0                     
 ******************************************************************************
->> Linked Sat Jul 23 23:32:01 2016
+>> Linked Sun Jul 24 10:21:23 2016
 
 OUTPUT FILE NAME:   <watchdogMCU.out>
 ENTRY POINT SYMBOL: "_c_int00_noargs_noexit"  address: 00004568
