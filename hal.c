@@ -60,10 +60,12 @@ void USBHAL_initPorts(void)
 #ifdef __MSP430_HAS_PORT1_R__
     GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_ALL);
     GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_ALL);
+
 #endif
 
 #ifdef __MSP430_HAS_PORT2_R__
     GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_ALL);
+    GPIO_setOutputHighOnPin(RELLAY_PORT, RELAY_PIN);
     GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_ALL);
 #endif
 

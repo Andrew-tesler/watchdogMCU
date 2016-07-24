@@ -63,6 +63,8 @@ uint8_t retInString (char* string);
 void initTimer(void);
 void setTimer_A_Parameters(void);
 
+// Previus state if = 1 Powered on 0 = powered off
+int prevState = 0;
 // Global flags set by events
 volatile uint8_t bCDCDataReceived_event = FALSE; // Indicates data has been rx'ed
                                               // without an open rx operation
@@ -71,7 +73,7 @@ volatile uint8_t bCDCDataReceived_event = FALSE; // Indicates data has been rx'e
 char wholeString[MAX_STR_LENGTH] = ""; // Entire input str from last 'return'
 
 // Set/declare toggle delays
-uint16_t SlowToggle_Period = 20000 - 1;
+uint16_t SlowToggle_Period = 40000 - 1;
 uint16_t FastToggle_Period = 1000 - 1;
 
 Timer_A_initUpModeParam Timer_A_params = {0};
@@ -81,6 +83,7 @@ Timer_A_initUpModeParam Timer_A_params = {0};
  */
 void main (void)
 {
+	GPIO_setOutputHighOnPin(RELLAY_PORT, RELAY_PIN);
     WDT_A_hold(WDT_A_BASE); // Stop watchdog timer
 
     // Minumum Vcore setting required for the USB API is PMM_CORE_LEVEL_2 .
@@ -89,7 +92,7 @@ void main (void)
     USBHAL_initClocks(8000000);   // Config clocks. MCLK=SMCLK=FLL=8MHz; ACLK=REFO=32kHz
     initTimer();           // Prepare timer for LED toggling
     USB_setup(TRUE, TRUE); // Init USB & events; if a host is present, connect
-
+    GPIO_setOutputHighOnPin(RELLAY_PORT, RELAY_PIN);
     __enable_interrupt();  // Enable interrupts globally
     
     while (1)
@@ -131,42 +134,43 @@ void main (void)
 
                     // Has the user pressed return yet?
                     if (retInString(wholeString)){
-                    
+
+
                         // Compare to string #1, and respond
-                        if (!(strcmp(wholeString, "LED ON"))){
-                        
+                        if (!(strcmp(wholeString, "led on"))){
+
                             // Turn off timer; no longer toggling LED
                             Timer_A_stop(TIMER_A0_BASE);
-                            
+
                             // Turn on LED P1.0
                             GPIO_setOutputHighOnPin(LED_PORT, LED_PIN);
-                            
+
                             // Prepare the outgoing string
                             strcpy(outString,"\r\nLED is ON\r\n\r\n");
-                            
+
                             // Send the response over USB
                             USBCDC_sendDataInBackground((uint8_t*)outString,
                                 strlen(outString),CDC0_INTFNUM,0);
-                                
+
                         // Compare to string #2, and respond
-                        } else if (!(strcmp(wholeString, "LED OFF"))){
-                        
+                        } else if (!(strcmp(wholeString, "led off"))){
+
                             // Turn off timer; no longer toggling LED
                             Timer_A_stop(TIMER_A0_BASE);
-                            
+
                             // Turn off LED P1.0
                             GPIO_setOutputLowOnPin(LED_PORT, LED_PIN);
-                            
+
                             // Prepare the outgoing string
                             strcpy(outString,"\r\nLED is OFF\r\n\r\n");
-                            
+
                             // Send the response over USB
                             USBCDC_sendDataInBackground((uint8_t*)outString,
                                 strlen(outString),CDC0_INTFNUM,0);
-                                
+
                         // Compare to string #3, and respond
-                        } else if (!(strcmp(wholeString, "LED TOGGLE - SLOW"))){
-                        
+                        } else if (!(strcmp(wholeString, "led toggle - slow"))){
+
                             // Turn off timer while changing toggle period
                             Timer_A_stop(TIMER_A0_BASE);
 
@@ -174,38 +178,86 @@ void main (void)
                             Timer_A_params.timerPeriod = SlowToggle_Period;
 
                             Timer_A_initUpMode(TIMER_A0_BASE, &Timer_A_params);
-                                
+
                             // Start timer for toggling
                             Timer_A_startCounter(TIMER_A0_BASE,
                                 TIMER_A_UP_MODE);
-                                
+
                             // Prepare the outgoing string
                             strcpy(outString,
                                 "\r\nLED is toggling slowly\r\n\r\n");
-                                
+
                             // Send the response over USB
                             USBCDC_sendDataInBackground((uint8_t*)outString,
                                 strlen(outString),CDC0_INTFNUM,0);
-                                
+                        } else if (!(strcmp(wholeString, "free dog"))){
+
+                        	// Start the watchdog -- represented as the green led
+                        	GPIO_setOutputHighOnPin(LED2_PORT, LED2_PIN);
+
+                            // Turn off timer while changing toggle period
+                            Timer_A_stop(TIMER_A1_BASE);
+
+                            // Set timer period for slow LED toggle
+                            Timer_A_params.timerPeriod = SlowToggle_Period;
+
+                            Timer_A_initUpMode(TIMER_A1_BASE, &Timer_A_params);
+
+                            // Start timer for toggling
+                            Timer_A_startCounter(TIMER_A1_BASE,
+                                TIMER_A_UP_MODE);
+
+                           // Prepare the outgoing string
+                           strcpy(outString,
+                           "\r\nWatch dog started\r\n\r\n");
+
+                          // Send the response over USB
+                          USBCDC_sendDataInBackground((uint8_t*)outString,
+                                 strlen(outString),CDC0_INTFNUM,0);
+
+                        } else if (!(strcmp(wholeString, "feed"))){
+
+                        	// Turn off timer while changing toggle period
+                        	Timer_A_stop(TIMER_A1_BASE);
+
+                        	// Set timer period for slow LED toggle
+                        	Timer_A_params.timerPeriod = SlowToggle_Period;
+
+                        	Timer_A_initUpMode(TIMER_A1_BASE, &Timer_A_params);
+
+                        	// Start timer for toggling
+                        	Timer_A_startCounter(TIMER_A1_BASE,
+                        	      TIMER_A_UP_MODE);
+
+
+                            strcpy(outString,
+                            "\r\nFeeded dog\r\n\r\n");
+
+                            // Send the response over USB
+                            USBCDC_sendDataInBackground((uint8_t*)outString,
+                                strlen(outString),CDC0_INTFNUM,0);
                         // Compare to string #4, and respond
-                        } else if (!(strcmp(wholeString,"LED TOGGLE - FAST"))){
+                        } else if (!(strcmp(wholeString,"led toggle - fast"))){
                         
                             // Turn off timer
                             Timer_A_stop(TIMER_A0_BASE);
-                            
+
+                            // Set timer period of 1 sec
+                            Timer_A_params.timerPeriod = 0xff;
+
                             // Set timer period for fast LED toggle
-                            Timer_A_params.timerPeriod = FastToggle_Period;
+                            //Timer_A_params.timerPeriod = FastToggle_Period;
 
                             Timer_A_initUpMode(TIMER_A0_BASE, &Timer_A_params);
-                                
+
                             // Start timer for toggling
                             Timer_A_startCounter(TIMER_A0_BASE,
                                 TIMER_A_UP_MODE);
-                                
+
                             // Prepare the outgoing string
                             strcpy(outString,
                                 "\r\nLED is toggling fast\r\n\r\n");
-                                
+
                             // Send the response over USB
                             USBCDC_sendDataInBackground((uint8_t*)outString,
                                 strlen(outString),CDC0_INTFNUM,0);
@@ -214,8 +266,15 @@ void main (void)
                         } else {
                         
                             // Prepare the outgoing string
-                            strcpy(outString,"\r\nNo such command!\r\n\r\n");
+                            strcpy(outString,"\r\nNo such command!\r\r");
                             
+
+                            // Send the response over USB
+                            USBCDC_sendDataInBackground((uint8_t*)outString,
+                                strlen(outString),CDC0_INTFNUM,0);
+
+                            strcpy(outString,"\r\nValid Commands: led on, led off, led toggle - fast, led toggle - slow,feed ,free dog\r\n");
+
                             // Send the response over USB
                             USBCDC_sendDataInBackground((uint8_t*)outString,
                                 strlen(outString),CDC0_INTFNUM,0);
@@ -368,7 +427,7 @@ uint8_t retInString (char* string)
 void setTimer_A_Parameters()
 {
 	Timer_A_params.clockSource = TIMER_A_CLOCKSOURCE_ACLK;
-	Timer_A_params.clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1;
+	Timer_A_params.clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_4;
 	Timer_A_params.timerInterruptEnable_TAIE = TIMER_A_TAIE_INTERRUPT_DISABLE;
 	Timer_A_params.captureCompareInterruptEnable_CCR0_CCIE =
 		       TIMER_A_CAPTURECOMPARE_INTERRUPT_ENABLE;
@@ -386,15 +445,16 @@ void initTimer (void)
      
     // Start timer
     Timer_A_clearTimerInterrupt(TIMER_A0_BASE);
-    
+    Timer_A_clearTimerInterrupt(TIMER_A1_BASE);
     // Set timer period to zero 
     Timer_A_params.timerPeriod = 0;
 
     Timer_A_initUpMode(TIMER_A0_BASE, &Timer_A_params);
+    Timer_A_initUpMode(TIMER_A1_BASE, &Timer_A_params);
 }
 
 /*
- * ======== TIMER1_A0_ISR ========
+ * ======== TIMER0_A0_ISR ========
  */
 #if defined(__TI_COMPILER_VERSION__) || (__IAR_SYSTEMS_ICC__)
 #pragma vector=TIMER0_A0_VECTOR
@@ -405,7 +465,46 @@ void __attribute__ ((interrupt(TIMER0_A0_VECTOR))) TIMER0_A0_ISR (void)
 #error Compiler not found!
 #endif
 {
+
     GPIO_toggleOutputOnPin(LED_PORT, LED_PIN);
 }
 
+/*
+ * ======== TIMER1_A0_ISR ========
+ */
+#if defined(__TI_COMPILER_VERSION__) || (__IAR_SYSTEMS_ICC__)
+#pragma vector=TIMER1_A0_VECTOR
+__interrupt void TIMER1_A0_ISR (void)
+#elif defined(__GNUC__) && (__MSP430__)
+void __attribute__ ((interrupt(TIMER0_A0_VECTOR))) TIMER0_A0_ISR (void)
+#else
+#error Compiler not found!
+#endif
+{
+
+	if (prevState == 0){  // Prev state relay was off (unit on)
+		prevState = 1;    // Initialize prev state to ON
+		GPIO_setOutputLowOnPin(LED2_PORT, LED2_PIN);
+		GPIO_setOutputLowOnPin(RELLAY_PORT, RELAY_PIN);
+
+
+		Timer_A_params.timerPeriod = 0x10;
+
+
+
+	}
+	else {
+		prevState = 0;
+		GPIO_setOutputHighOnPin(LED2_PORT, LED2_PIN);
+	    GPIO_setOutputHighOnPin(RELLAY_PORT, RELAY_PIN);
+
+	    Timer_A_params.timerPeriod = 0xff;
+
+
+
+	}
+
+   //GPIO_toggleOutputOnPin(LED2_PORT, LED2_PIN);
+}
+//TIMER1_A0_VECTOR
 //Released_Version_5_00_01

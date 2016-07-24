@@ -41,6 +41,12 @@
 #define LED_PORT	GPIO_PORT_P1
 #define LED_PIN		GPIO_PIN0
 
+#define LED2_PORT   GPIO_PORT_P4
+#define LED2_PIN    GPIO_PIN7
+
+#define RELLAY_PORT GPIO_PORT_P2
+#define RELAY_PIN   GPIO_PIN0
+
 /*----------------------------------------------------------------------------
  * The following function names are deprecated.  These were updated to new 
  * names to follow OneMCU naming convention.
